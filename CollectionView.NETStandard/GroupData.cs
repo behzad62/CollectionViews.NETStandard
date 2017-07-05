@@ -23,6 +23,7 @@ namespace CollectionViews.NETStandard
             _internalItems = new FastObservableCollection<object>();
             Items = new ReadOnlyObservableCollection<object>(_internalItems);
             _level = 0;
+            this.IsBottomLevel = true;
         }
         #endregion
         //-----------------------------------------------------
@@ -185,6 +186,7 @@ namespace CollectionViews.NETStandard
             }
             else
             {
+                this.IsBottomLevel = false;
                 GroupData child = _internalItems.FirstOrDefault(i => (i is GroupData) && ((GroupData)i).Header.Equals(headers.First())) as GroupData;
                 if (child != null)
                     child.AddItemToGroup(item, ++level, headers.Skip(1));

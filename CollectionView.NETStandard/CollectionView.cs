@@ -287,6 +287,7 @@ namespace CollectionViews.NETStandard
         protected virtual IEnumerable<IGroupData> GroupCollectionItems(IEnumerable<object> collection)
         {
             List<GroupData> groups = new List<GroupData>();
+
             foreach (var item in collection)
             {
                 object[] groupNames = GetItemGroupNames(item);
@@ -302,6 +303,11 @@ namespace CollectionViews.NETStandard
                     group.AddItemToGroup(item, 1, groupNames.Skip(1));
                     groups.Add(group);
                 }
+            }
+            if (groups.Count == 0)//if no item was in the collection, we add an empty group
+            {
+                GroupData group = new GroupData(null);
+                groups.Add(group);
             }
             var sorted = SortGroupHeaders(groups);
 
