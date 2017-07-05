@@ -22,6 +22,7 @@ namespace CollectionViews.NETStandard
         private IList _sourceCollection;
         private List<object> _internalSource;
         private Predicate<object> _filter;
+        private int _count;
         #endregion
         //-----------------------------------------------------
         #region Construction
@@ -64,7 +65,7 @@ namespace CollectionViews.NETStandard
 
         public bool IsReadOnly => true;
 
-        public int Count => GetCount();
+        public int Count => _count;
 
         public bool IsSynchronized => false;
 
@@ -147,7 +148,6 @@ namespace CollectionViews.NETStandard
         public void Refresh()
         {
             Init();
-            NotifyOfPropertyChange(nameof(Count));
             NotifyCollectionReset();
         }
 
@@ -170,6 +170,7 @@ namespace CollectionViews.NETStandard
             SortCollection(_internalSource);
             IEnumerable<IGroupData> groupedData = GroupCollectionItems(_internalSource);
             _groups.ReplaceRange(groupedData);
+            UpdateCount();
         }
 
         private void _sortDescriptions_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -187,14 +188,13 @@ namespace CollectionViews.NETStandard
                 }
             }
             NotifyCollectionReset();
-            //NotifyOfPropertyChange("Item[]");
-            //OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
         private void _groupDescriptions_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             IEnumerable<IGroupData> groupedData = GroupCollectionItems(_internalSource);
             _groups.ReplaceRange(groupedData);
+            UpdateCount();
             NotifyCollectionReset();
         }
 
@@ -356,7 +356,6 @@ namespace CollectionViews.NETStandard
         protected virtual void OnFilterChanged()
         {
             Init();
-            NotifyOfPropertyChange(nameof(Count));
             NotifyOfPropertyChange(nameof(Filter));
             NotifyCollectionReset();
         }
@@ -466,7 +465,6 @@ namespace CollectionViews.NETStandard
                 case NotifyCollectionChangedAction.Reset:
                 default:
                     Init();
-                    NotifyOfPropertyChange(nameof(Count));
                     NotifyCollectionReset();
                     break;
             }
@@ -509,7 +507,7 @@ namespace CollectionViews.NETStandard
             if (emptiedGroups != null && emptiedGroups.Count > 0)
             {//we emptiedGroups the empty group from the collectionView
                 _groups.Remove(emptiedGroups.Last());//the emptiedGroup is not necessarily direct child of the _groups collection
-                NotifyOfPropertyChange(nameof(Count));
+                UpdateCount();
                 NotifyOfPropertyChange("Item[]");
                 try
                 {
@@ -535,7 +533,7 @@ namespace CollectionViews.NETStandard
             }
             if (index >= 0) // since item was in the collection viwe this alwasy must be true
             {
-                NotifyOfPropertyChange(nameof(Count));
+                UpdateCount();
                 NotifyOfPropertyChange("Item[]");
                 try
                 {
@@ -556,7 +554,7 @@ namespace CollectionViews.NETStandard
                 ((GroupData)_groups[0]).RemoveRangeAt(oldStartingIndex, removedItems.Count);
                 _internalSource.RemoveRange(oldStartingIndex, removedItems.Count);
                 NotifyOfPropertyChange("Item[]");
-                NotifyOfPropertyChange(nameof(Count));
+                UpdateCount();
                 try
                 {
                     OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, removedItems, oldStartingIndex));
@@ -581,7 +579,7 @@ namespace CollectionViews.NETStandard
                     OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
                 }
                 NotifyOfPropertyChange("Item[]");
-                NotifyOfPropertyChange(nameof(Count));
+                UpdateCount();
             }
         }
 
@@ -633,7 +631,6 @@ namespace CollectionViews.NETStandard
             {
                 //It can not be a valid replace action for collectionchanged event; We need to recreate the collectionview
                 Init();
-                NotifyOfPropertyChange(nameof(Count));
                 NotifyCollectionReset();
             }
         }
@@ -658,7 +655,7 @@ namespace CollectionViews.NETStandard
                         ((GroupData)_groups[0]).Insert(insertAt, item);
                         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, insertAt));
                     }
-                    NotifyOfPropertyChange(nameof(Count));
+                    UpdateCount();
                     NotifyOfPropertyChange("Item[]");
                 }
                 else
@@ -673,7 +670,7 @@ namespace CollectionViews.NETStandard
                 List<object> filtered = GetFilteredItems(newItems);
                 _internalSource.InsertRange(newStartingIndex, filtered);
                 ((GroupData)_groups[0]).InsertRange(newStartingIndex, filtered);
-                NotifyOfPropertyChange(nameof(Count));
+                UpdateCount();
                 NotifyOfPropertyChange("Item[]");
                 try
                 {
@@ -774,9 +771,13 @@ namespace CollectionViews.NETStandard
         /// <returns></returns>
         private int GetCount()
         {
-            return _groups.Sum(g => (((GroupData)g).Count));
+            return _groups.Sum(g => g.Count);
         }
-
+        private void UpdateCount()
+        {
+            _count = GetCount();
+            NotifyOfPropertyChange(nameof(Count));
+        }
         private List<object> GetFilteredItems(IEnumerable items)
         {
             List<object> filtered = new List<object>();
@@ -810,7 +811,6 @@ namespace CollectionViews.NETStandard
         private void NotifyCollectionReset()
         {
             NotifyOfPropertyChange("Item[]");
-            //NotifyOfPropertyChange(nameof(Groups));
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 

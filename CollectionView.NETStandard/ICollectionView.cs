@@ -23,7 +23,7 @@ namespace CollectionViews.NETStandard
         //     Gets the top-level groups.
         //
         // Returns:
-        //     A read-only collection of the top-level groups or null if there are no groups.
+        //     A read-only collection of the top-level groups.
         ReadOnlyObservableCollection<IGroupData> Groups { get; }
         //
         // Summary:
@@ -59,11 +59,6 @@ namespace CollectionViews.NETStandard
         //     A collection of GroupDescription objects that describe
         //     how the items in the collection are grouped in the view.
         FastObservableCollection<GroupDescription> GroupDescriptions { get; }
-        //
-        // Summary:
-        //     When implementing this interface, raise this event before changing the current
-        //     item. Event handler can cancel this event.
-        //event CurrentChangingEventHandler CurrentChanging;
         //
         // Summary:
         //     Recreates the view.
