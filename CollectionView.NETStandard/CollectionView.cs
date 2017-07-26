@@ -510,8 +510,8 @@ namespace CollectionViews.NETStandard
                     break;
                 }
             }
-            if (emptiedGroups != null && emptiedGroups.Count > 0)
-            {//we emptiedGroups the empty group from the collectionView
+            if (emptiedGroups != null && emptiedGroups.Count > 0 && _groupDescriptions.Count > 0)
+            {//we remove the emptied group from the collectionView unless it is the only group in the case of _groupDescriptions.Count == 0
                 _groups.Remove(emptiedGroups.Last());//the emptiedGroup is not necessarily direct child of the _groups collection
                 UpdateCount();
                 NotifyOfPropertyChange("Item[]");
@@ -650,13 +650,13 @@ namespace CollectionViews.NETStandard
 
             if (_sortDescriptions.Count > 0 || _groupDescriptions.Count > 0)
             {
-                if (_groupDescriptions.Count == 0)
+                if (_groupDescriptions.Count == 0 && newItems.Count < 10 && _internalSource.Count > 30)
                 {
-                    //only sorting is applied
+                    //only sorting is applied and few items are being added to the relatively large collection 
                     List<object> filtered = GetFilteredItems(newItems);
                     foreach (var item in filtered)
                     {
-                        int insertAt = GetInsertIndex(_internalSource, item);
+                        int insertAt = GetInsertIndex(_internalSource, item, 0, _internalSource.Count - 1);
                         _internalSource.Insert(insertAt, item);
                         ((GroupData)_groups[0]).Insert(insertAt, item);
                         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, insertAt));
@@ -684,7 +684,7 @@ namespace CollectionViews.NETStandard
                 }
                 catch (NotSupportedException ex)
                 {
-                    //WPF listView does not support range actions :
+                    //WPF listView does not support range actions:
                     for (int i = 0; i < newItems.Count; i++)
                     {
                         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItems[i], newStartingIndex + i));
@@ -760,16 +760,29 @@ namespace CollectionViews.NETStandard
                 throw new IndexOutOfRangeException($"The given {nameof(index)} value is out of range of valid indexes for this collection.");
         }
         /// <summary>
-        /// Returns the index that item should be placed in the collection based on the sorting criterias 
+        /// Returns the index that item should be placed in the previously sorted collection based on the sorting criterias 
         /// </summary>
-        private int GetInsertIndex(IList<object> items, object newItem)
+        private int GetInsertIndex(IList<object> items, object newItem, int startIndex, int endIndex)
         {
-            for (int i = 0; i < items.Count; i++)
-            {
-                if (SourceItemsComparison(newItem, items[i]) <= 0)
-                    return i;
-            }
-            return items.Count;
+            if (startIndex < 0 || endIndex >= items.Count)
+                throw new ArgumentOutOfRangeException("Given index was out of range of the valid indexs for the given collection.");
+            if (startIndex > endIndex)
+                throw new ArgumentException("startIndex should be less than or equal to the endIndex");
+            if (SourceItemsComparison(newItem, items[startIndex]) <= 0)
+                return startIndex;
+            else if (SourceItemsComparison(newItem, items[endIndex]) >= 0)
+                return endIndex + 1;
+
+            int middle = startIndex + (endIndex - startIndex) / 2;
+            int comparison = SourceItemsComparison(newItem, items[middle]);
+            if (comparison == 0)
+                return middle;
+            else if (comparison < 0)
+                return GetInsertIndex(items, newItem, startIndex, middle);
+            comparison = SourceItemsComparison(newItem, items[middle + 1]);
+            if (comparison <= 0)
+                return middle + 1;
+            return GetInsertIndex(items, newItem, middle + 1, endIndex);
         }
         /// <summary>
         /// Returns count of the items in the collectionview
