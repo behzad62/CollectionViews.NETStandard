@@ -1,4 +1,6 @@
-﻿namespace CollectionViews.NETStandard
+﻿using System;
+
+namespace CollectionViews.NETStandard
 {
     public class SortDescription
     {
@@ -22,5 +24,9 @@
         /// Gets or sets the property name being used as the sorting criteria. The default value is null.
         /// </summary>
         public string PropertyName { get; set; }
+        /// <summary>
+        /// A value provider that can be used to return the value of the sorting property without using the reflection with property name.
+        /// </summary>
+        public Func<object, IComparable> PropertyValueProvider { get; set; }
     }
 }
